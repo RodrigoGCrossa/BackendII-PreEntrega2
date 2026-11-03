@@ -43,7 +43,7 @@ src/
   models/                # User y Event
   middlewares/           # errores
   utils/                 # helpers reutilizables
- tests/                  # pruebas unitarias, HTTP e integración
+tests/                   # pruebas unitarias, HTTP e integración
 ```
 
 Registro: `ruta → controller → service → repository → DAO → modelo`.
@@ -94,4 +94,4 @@ npm run test:integration
 
 La prueba de integración queda **omitida explícitamente** si no configurás `TEST_MONGO_URL`. Para ejecutarla, usá una base exclusiva de pruebas: `TEST_MONGO_URL="URL_DE_TU_BASE_DE_PRUEBAS" npm run test:integration`. Crea un usuario temporal, comprueba el hash persistido y lo elimina al terminar. No apunta por defecto a tu base normal.
 
-En esta preparación se comprobaron sintaxis y pruebas unitarias. La instalación de dependencias quedó bloqueada por la red del entorno; las pruebas HTTP y las integraciones reales no se presentan como verificadas. Ejecutá los comandos anteriores después de instalar dependencias.
+Verificación realizada: sintaxis y pruebas unitarias aprobadas. Se incluye una suite HTTP con dobles para ejecutar después de instalar dependencias. Las integraciones MongoDB y SMTP reales requieren configuración propia y no se presentan como verificadas.
