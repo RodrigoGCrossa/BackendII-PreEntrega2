@@ -1,0 +1,32 @@
+import { test, mock, after } from 'node:test';
+import assert from 'node:assert/strict';
+process.env.JWT_SECRET = 'test-only-secret-with-more-than-32-characters';
+process.env.NODE_ENV = 'test';
+const { default: request } = await import('supertest');
+const { app } = await import('../../src/app.js');
+after(() => mock.restoreAll());
+test('Health y rutas desconocidas', async () => {
+  const health = await request(app).get('/api/health').expect(200);
+  assert.deepEqual(health.body, { status: 'ok', message: 'Servidor activo' });
+  await request(app).get('/no-existe').expect(404);
+});
+test('JSON malformado', async () => { await request(app).post('/api/sessions/register').set('Content-Type', 'application/json').send('{').expect(400); });
+const { usersRepository } = await import('../../src/repositories/users.repository.js');
+const { comparePassword } = await import('../../src/utils/hash.js');
+const users = [];
+mock.method(usersRepository, 'findByEmail', async (email) => users.find((u) => u.email === email) ?? null);
+mock.method(usersRepository, 'findById', async (id) => users.find((u) => u._id === id) ?? null);
+mock.method(usersRepository, 'create', async (data) => { const user = { ...data, _id: (users.length + 1).toString(16).padStart(24, '0') }; users.push(user); return user; });
+const data = { first_name: 'Ana', last_name: 'Pérez', email: ' Ana@Mail.com ', password: 'Secreta123', role: 'admin' };
+test('Registro, validaciones, duplicado y hash real bcrypt', async () => {
+  await request(app).post('/api/sessions/register').send({}).expect(400);
+  await request(app).post('/api/sessions/register').send({ ...data, email: 'invalido' }).expect(400);
+  await request(app).post('/api/sessions/register').send({ ...data, password: 'corta' }).expect(400);
+  const result = await request(app).post('/api/sessions/register').send(data).expect(201);
+  assert.equal(result.body.payload.email, 'ana@mail.com');
+  assert.equal(result.body.payload.role, 'user');
+  assert.equal('password' in result.body.payload, false);
+  assert.notEqual(users[0].password, data.password);
+  assert.equal(await comparePassword(data.password, users[0].password), true);
+  await request(app).post('/api/sessions/register').send(data).expect(409);
+});
